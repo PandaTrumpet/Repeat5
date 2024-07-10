@@ -1,6 +1,7 @@
 import createHttpError from 'http-errors';
 import { findUser, register } from '../services/auth-servises.js';
 import { comparePassword } from '../utils/hash.js';
+import { createSession } from '../services/session-servises.js';
 export const registerUserController = async (req, res) => {
   const { email } = req.body;
   const user = await findUser({ email });
@@ -26,4 +27,10 @@ export const loginUserController = async (req, res) => {
   if (!passwordComapare) {
     throw createHttpError(401, 'Password invalid');
   }
+  const session = await createSession(user._id);
+  res.status(201).json({
+    status: 201,
+    message: 'Successful',
+    data: { accessToken: session.accessToken },
+  });
 };
