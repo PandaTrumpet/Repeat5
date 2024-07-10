@@ -1,7 +1,11 @@
 import createHttpError from 'http-errors';
 import { findUser, register } from '../services/auth-servises.js';
 import { comparePassword } from '../utils/hash.js';
-import { createSession, findSession } from '../services/session-servises.js';
+import {
+  createSession,
+  deleteSession,
+  findSession,
+} from '../services/session-servises.js';
 import { ONE_DAY } from '../constans/index.js';
 const setupSession = (res, session) => {
   res.cookie('refreshToken', session.refreshToken, {
@@ -67,4 +71,15 @@ export const refreshUserController = async (req, res) => {
     message: 'Successfusl',
     data: { accessToken: newSession.accessToken },
   });
+};
+
+export const logoutUserController = async (req, res) => {
+  const { sessionId } = req.cookies;
+  if (!sessionId) {
+    throw createHttpError(401, 'Session not found');
+  }
+  await deleteSession({ _id: sessionId });
+  // console.log(deleteSession);
+  res.clearCookie('sessionId'), res.clearCookie('refreshToken');
+  res.status(204).send();
 };
