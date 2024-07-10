@@ -1,7 +1,18 @@
 import createHttpError from 'http-errors';
 import { findUser, register } from '../services/auth-servises.js';
 import { comparePassword } from '../utils/hash.js';
-import { createSession } from '../services/session-servises.js';
+import { createSession, findSession } from '../services/session-servises.js';
+import { ONE_DAY } from '../constans/index.js';
+const setupSession = (res, session) => {
+  res.cookie('refreshToken', session.refreshToken, {
+    httpOnly: true,
+    expires: new Date(Date.now() + ONE_DAY),
+  });
+  res.cookie('sessionId', session._id, {
+    httpOnly: true,
+    expires: new Date(Date.now() + ONE_DAY),
+  });
+};
 export const registerUserController = async (req, res) => {
   const { email } = req.body;
   const user = await findUser({ email });
@@ -28,9 +39,32 @@ export const loginUserController = async (req, res) => {
     throw createHttpError(401, 'Password invalid');
   }
   const session = await createSession(user._id);
+
+  setupSession(res, session);
+
   res.status(201).json({
     status: 201,
     message: 'Successful',
     data: { accessToken: session.accessToken },
+  });
+};
+
+export const refreshUserController = async (req, res) => {
+  const { sessionId, refreshToken } = req.cookies;
+  const currentSession = await findSession({ _id: sessionId, refreshToken });
+  if (!currentSession) {
+    throw createHttpError(401, 'Session not found');
+  }
+  const refreshTokenExpired =
+    new Date() > new Date(currentSession.refreshTokenValidUntil);
+  if (refreshTokenExpired) {
+    throw createHttpError(401, 'Session expired');
+  }
+  const newSession = await createSession(currentSession.userId);
+  setupSession(res, newSession);
+  res.status(200).json({
+    status: 200,
+    message: 'Successfusl',
+    data: { accessToken: newSession.accessToken },
   });
 };

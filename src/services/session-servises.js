@@ -16,3 +16,7 @@ export const createSession = async (userId) => {
     refreshTokenValidUntil,
   });
 };
+
+export const findSession = (filter) => SessionSchema.findOne(filter);
+
+export const deleteSession = (filter) => SessionSchema.deleteOne(filter );
