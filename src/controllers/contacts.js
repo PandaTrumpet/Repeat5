@@ -3,7 +3,7 @@ import {
   addContact,
   deleteContact,
   getAllContacts,
-  getContactById,
+  getContact,
   patchContact,
 } from '../services/contact.js';
 import { errorHandler } from '../middleware/errorHandler.js';
@@ -32,8 +32,8 @@ export const getAllContactsController = async (req, res) => {
 
 export const getContactByIdController = async (req, res) => {
   const { contactId } = req.params;
-
-  const contact = await getContactById(contactId);
+  const { _id: userId } = req.user;
+  const contact = await getContact({ _id: contactId, userId });
   if (!contact) {
     return res.status(404).json({
       status: 404,
@@ -49,7 +49,9 @@ export const getContactByIdController = async (req, res) => {
 };
 
 export const addContactController = async (req, res) => {
-  const contact = await addContact(req.body);
+  const { _id: userId } = req.user;
+  const contact = await addContact({ ...req.body, userId });
+
   res.status(201).json({
     status: 201,
     message: 'Successfully created a contact!',
@@ -57,9 +59,10 @@ export const addContactController = async (req, res) => {
   });
 };
 export const patchContactController = async (req, res, next) => {
+  const { _id: userId } = req.user;
   const { contactId } = req.params;
   const contact = await patchContact(contactId, req.body, {
-    // upsert: true,
+    userId,
   });
   if (!contact) {
     return next(
@@ -77,8 +80,9 @@ export const patchContactController = async (req, res, next) => {
 };
 
 export const deleteContactController = async (req, res) => {
+  const { _id: userId } = req.user;
   const { contactId } = req.params;
-  const contact = await deleteContact(contactId);
+  const contact = await deleteContact(contactId, { userId });
   if (!contact) {
     throw errorHandler(404, 'Contact not found');
   }
